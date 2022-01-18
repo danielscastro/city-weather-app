@@ -11,7 +11,7 @@ const chooseDayOrNightImg = isDayTime => isDayTime
   ? './src/day.svg'
   : './src/night.svg';
 
-const getTimeIcon = weatherIcon => `<img src="./src/icons/${WeatherIcon}.svg">`;
+const getTimeIcon = weatherIcon => `<img src="./src/icons/${weatherIcon}.svg">`;
 
 const unhideCard = () => {
   if(cityWeatherCard.classList.contains('d-none')) {
@@ -19,23 +19,41 @@ const unhideCard = () => {
   }
 }
 
-formChangeCity.addEventListener('submit', async event => {
+const storeLastCity = searchedCity => localStorage.setItem('lastCity', searchedCity);
+
+const showCityWeatherInfo = async searchedCity => {
+  const [{ Key, LocalizedName }] = await getCityData(searchedCity);
+  const [{ IsDayTime, WeatherText, Temperature, WeatherIcon }] = await getCityWeather(Key);
+  const { Headline } = await getCityForecast(Key);
+
+  dayOrNightImg.src = chooseDayOrNightImg(IsDayTime);
+  timeIconContainer.innerHTML = getTimeIcon(WeatherIcon);
+  weatherForecastText.innerHTML = Headline.Text;
+  cityName.textContent = LocalizedName;
+  cityWeather.textContent = WeatherText;
+  cityTemperature.textContent = Temperature.Metric.Value;
+
+  unhideCard();
+}
+
+const showCityWeatherCard = event => {
     event.preventDefault();
 
     searchedCity = event.target.city.value;
 
-    [{ Key, LocalizedName }] = await getCityData(searchedCity);
-    [{ IsDayTime, WeatherText, Temperature, WeatherIcon }] = await getCityWeather(Key);
-    forecast = await getCityForecast(Key);
-
-    dayOrNightImg.src = chooseDayOrNightImg(IsDayTime);
-    timeIconContainer.innerHTML = getTimeIcon(WeatherIcon);
-    weatherForecastText.innerHTML = forecast.Headline.Text;
-    cityName.textContent = LocalizedName;
-    cityWeather.textContent = WeatherText;
-    cityTemperature.textContent = Temperature.Metric.Value;
-
-    unhideCard();
+    showCityWeatherInfo(searchedCity);
 
     formChangeCity.reset();
-})
+
+    storeLastCity(searchedCity);
+}
+
+const verifyLastCity = () => {
+  const lastCity = localStorage.getItem('lastCity');
+  if(lastCity) {
+    showCityWeatherInfo(lastCity);
+  }
+}
+
+verifyLastCity();
+formChangeCity.addEventListener('submit', showCityWeatherCard);
